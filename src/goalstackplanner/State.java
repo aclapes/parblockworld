@@ -6,7 +6,6 @@ package goalstackplanner;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Stack;
 
 /**
  *
@@ -15,59 +14,16 @@ import java.util.Stack;
 public class State {
     
     private ArrayList<Predicate> predicates;
-    private ArrayList<Operator> plan;
-    private Stack stack;
-
-    private int n;
-
-    public int getN() {
-        return n;
+    
+    public State() 
+    { 
+        this.predicates = new ArrayList<Predicate>();
     }
     
     public State(ArrayList<Predicate> predicates) 
     {
         this.predicates = predicates;
     }
-
-    public void setN(int n) {
-        this.n = n;
-    }
-    
-    public State(State parent)
-    {
-        for (Predicate p : parent.getPredicates())
-        {
-            this.predicates.add((Predicate) (p.clone()));
-        }
-        for (Operator op : parent.getPlan())
-        {
-            this.plan.add((Operator) (op.clone()));
-        }
-        for (Object obj : parent.getStack())
-        {
-            if (obj instanceof Predicate)
-            {
-                Predicate p = (Predicate) obj;
-                this.stack.add((Predicate) (p.clone()));
-            }
-            else if (obj instanceof Operator)
-            {
-                Operator op = (Operator) obj;
-                this.stack.add((Operator) (op.clone()));
-            }
-        }
-    }
-
-    public ArrayList<Operator> getPlan() {
-        return plan;
-    }
-
-    public Stack getStack() {
-        return stack;
-    }
-
-    public State() 
-    { }
 
     public ArrayList<Predicate> getPredicates() 
     {
@@ -113,7 +69,7 @@ public class State {
             this.predicates.remove(matchedPredicate);
     }
     
-    public void addPredicate(Predicate predicate) throws CloneNotSupportedException
+    public void addPredicate(Predicate predicate)
     {
         for (Predicate p : this.predicates)
         {
@@ -122,6 +78,23 @@ public class State {
         }
 
         this.predicates.add(predicate.clone());
+    }  
+    
+     /**
+     * addPredicate. Add specifying the adding position.
+     * 
+     * @param position
+     * @param predicate
+     */
+    public void addPredicate(int position, Predicate predicate)
+    {
+        for (Predicate p : this.predicates)
+        {
+            if ( p.equals(predicate) )
+                return;
+        }
+
+        this.predicates.add(position, predicate.clone());
     }  
     
     @Override
@@ -162,5 +135,18 @@ public class State {
         }
         if (numSatisfiedPrecs != this.predicates.size() || numNonSatisfiedPrecs > 0) return false;
         return true;
+    }
+    
+        public void applyOperator(Operator operator)
+    {      
+        for (Predicate p : operator.getRemovings())
+        {
+            this.removePredicate(p);
+        }
+  
+        for (Predicate p : operator.getAddings())
+        {
+            this.addPredicate(p);
+        }
     }
 }

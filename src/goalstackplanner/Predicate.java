@@ -27,14 +27,17 @@ public abstract class Predicate {
     
     public Predicate(Constant c)
     {
-        this.c1 = c;
+        if (c != null) this.c1 = c.clone();
+        else this.c1 = null;
         this.c2 = null;
     }    
     
     public Predicate(Constant c1, Constant c2)
     {
-        this.c1 = c1;
-        this.c2 = c2;
+        if (c1 != null) this.c1 = c1.clone();
+        else this.c1 = null;
+        if (c2 != null) this.c2 = c2.clone();
+        else this.c2 = null;
     }
     
     public abstract int getNumConstants();
@@ -69,14 +72,6 @@ public abstract class Predicate {
 //        if (!this.c2.equals(other.getC2())) return false;
 //            return true;
 //    }    
-
-    @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 43 * hash + (this.c1 != null ? this.c1.hashCode() : 0);
-        hash = 43 * hash + (this.c2 != null ? this.c2.hashCode() : 0);
-        return hash;
-    }
     
     public Constant getC1()
     {
@@ -103,4 +98,39 @@ public abstract class Predicate {
     }
     
     public abstract Predicate clone();
+    
+    public void instanciate(State state)
+    {
+        for (int i = state.getPredicates().size() - 1; i >= 0; i--)
+        {
+            Predicate p = state.getPredicates().get(i);
+            if (p.getClass() == this.getClass())
+            {
+                // Operator(null) <- Operator(Predicate) , TODO several possibilities!!!
+                if (this.getC1() == null && this.getC2() == null)
+                {
+                    this.setC1(p.getC1());
+                    return;
+                }
+                else if (this.getC1() == null && this.getC2() != null)
+                {
+                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
+                    if ( p.getC2().equals(this.getC2()) )
+                    {
+                        this.setC1(p.getC1());
+                        return;
+                    }
+                }
+                else if (this.getC1() != null && this.getC2() == null)
+                {
+                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
+                    if ( p.getC1().equals(this.getC1()) )
+                    {
+                        this.setC2(p.getC2());
+                        return;
+                    }
+                }
+            }
+        } 
+    }
 }

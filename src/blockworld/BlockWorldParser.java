@@ -30,7 +30,8 @@ public class BlockWorldParser {
     private BufferedReader in;
     
     private Problem problem;
-       
+    
+    private int onTablesCount;
     
     // Constructor
     
@@ -47,8 +48,11 @@ public class BlockWorldParser {
     {
         
         ArrayList<Constant> constants = new ArrayList<Constant>();
-        ArrayList<Predicate> initialStatePredicates = new ArrayList<Predicate>();
-        ArrayList<Predicate> goalStatePredicates = new ArrayList<Predicate>();
+//        ArrayList<Predicate> initialStatePredicates = new ArrayList<Predicate>();
+//        ArrayList<Predicate> goalStatePredicates = new ArrayList<Predicate>();
+        State initialState = new State();
+        State goalState = new State();
+        
         // Read the two lines of the file
         
         String strBlocks = null;
@@ -85,7 +89,8 @@ public class BlockWorldParser {
             }
         }
         
-        // Predicates
+        // Initial state predicates parsing
+        onTablesCount = 0;
         
         pattern = Pattern.compile("(\\w+( )*-( )*\\w+)|(\\w+)");
         
@@ -98,10 +103,16 @@ public class BlockWorldParser {
             {
                 String predicateName = matcher.group();
                 Predicate predicate = createPredicate(predicateName, matcher);
-                //if (! (predicate instanceof Heavier)) // TODO
-                    initialStatePredicates.add(predicate);
+                
+                initialState.addPredicate(predicate);
             }
+            
+            initialState.addPredicate(0, new UsedColsNum(onTablesCount));
         }
+        
+        // Goal state predicates parsing
+        
+        onTablesCount = 0;
         
         pattern = Pattern.compile("(\\w+( )*-( )*\\w+)|(\\w+)");
         
@@ -114,14 +125,14 @@ public class BlockWorldParser {
             {
                 String predicateName = matcher.group();
                 Predicate predicate = createPredicate(predicateName, matcher);
-                //if (! (predicate instanceof Heavier)) // TODO
-                    goalStatePredicates.add(predicate);
+                
+                goalState.addPredicate(predicate);
             }
+            
+            goalState.addPredicate(0, new UsedColsNum(onTablesCount));
         }
-        
-        this.problem = new Problem(constants,
-                                    new State(initialStatePredicates), 
-                                    new State(goalStatePredicates));
+
+        this.problem = new Problem(constants, initialState, goalState);
         
         return problem;
     }
@@ -153,6 +164,7 @@ public class BlockWorldParser {
         else if ((Pattern.compile("ON( )*-( )*TABLE")).matcher(predicateName).find())
         {
             matcher.find();
+            this.onTablesCount++;
             Block x = new Block(matcher.group());
             return new OnTable(x);
         }
