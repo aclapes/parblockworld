@@ -17,7 +17,8 @@ public class Main {
      */
     public static void main(String[] args) throws IOException, CloneNotSupportedException 
     {
-//        BlockWorld blockWorld = new BlockWorld("init.txt");
-//        blockWorld.exec();
+        BlockWorldParser parser = new BlockWorldParser("init.txt");
+        BlockWorld blockWorld = new BlockWorld(parser.parse());
+        blockWorld.exec();
     }
 }
