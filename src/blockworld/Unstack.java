@@ -58,8 +58,8 @@ public class Unstack extends Operator
     
     private void init()
     {
-        addPrecondition(preFree);
         addPrecondition(preFreeArm);
+        addPrecondition(preFree);
         addPrecondition(preOn);
         
         addRemoving(remOn);

@@ -28,13 +28,13 @@ public class Leave extends Operator
         super(null);
         
         prePickedUp = new PickedUp(null);
-        preUsedColsNum = new UsedColsNum();
+        preUsedColsNum = new UsedColsNum(0);
         
         remPickedUp = new PickedUp(null);
-        remUsedColsNum = new UsedColsNum();
+        remUsedColsNum = new UsedColsNum(0);
         
         addOnTable = new OnTable(null);
-        addUsedColsNum = new UsedColsNum();
+        addUsedColsNum = new UsedColsNum(1);
         addFreeArm = new FreeArm();        
         
         init();
@@ -44,13 +44,13 @@ public class Leave extends Operator
         super(x);
         
         prePickedUp = new PickedUp(x);
-        preUsedColsNum = new UsedColsNum();
+        preUsedColsNum = new UsedColsNum(0);
         
         remPickedUp = new PickedUp(x);
-        remUsedColsNum = new UsedColsNum();
+        remUsedColsNum = new UsedColsNum(0);
         
         addOnTable = new OnTable(x);
-        addUsedColsNum = new UsedColsNum();
+        addUsedColsNum = new UsedColsNum(1);
         addFreeArm = new FreeArm();
         
         init();
@@ -58,8 +58,8 @@ public class Leave extends Operator
     
     private void init()
     {
-        addPrecondition(prePickedUp);
         addPrecondition(preUsedColsNum);
+        addPrecondition(prePickedUp);
         //definePrecondition(new FreeTable()); // n < 3
         
         addRemoving(remPickedUp);
@@ -116,10 +116,10 @@ public class Leave extends Operator
             instanciate(predicate);
     }
     
-    public void instanciateUsedColsNum(int n)
+    public void instanciateUsedColsNum(UsedColsNum usedColsNum)
     {
-        preUsedColsNum.setN(n);
-        remUsedColsNum.setN(n);
-        addUsedColsNum.setN(n+1);
+        preUsedColsNum.setN(usedColsNum.getN());
+        remUsedColsNum.setN(usedColsNum.getN());
+        addUsedColsNum.setN(usedColsNum.getN()+1);
     }
 }

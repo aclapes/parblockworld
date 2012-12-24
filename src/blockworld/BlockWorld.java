@@ -26,11 +26,15 @@ public class BlockWorld
     private ArrayList<Operator> plan;
     private java.util.Stack stack;
     private State state;
+    private Operator lastOperator;
     
     public BlockWorld(Problem problem)
     {
         // Prepare pre-loaded information from the parser
         blocks = (ArrayList<Block>) problem.getConstants();
+        
+        heuristicConditionsRearrange(problem.getInitialState().getPredicates());
+        heuristicConditionsRearrange(problem.getFinalState().getPredicates());
         state = problem.getInitialState();
         goalState = problem.getFinalState();
         
@@ -79,46 +83,43 @@ public class BlockWorld
                 {
                     ArrayList<Operator> candidates = findOperatorToFullfilPredicate(predicate);
                     Operator operator = heuristicOperatorChoice(candidates, predicate);
+                    
                     operator.instanciate(predicate);
+//                    if (operator instanceof Leave)
+//                        ((Leave) operator).instanciateUsedColsNum(getUsedColsNumPredicate());
+//                    else if (operator instanceof PickUp)
+//                        ((PickUp) operator).instanciateUsedColsNum(getUsedColsNumPredicate());
+                    
                     stackOperator(operator);
                 }
                 
             }
             else if (obj instanceof ArrayList) 
             {
+                ArrayList<Predicate> conditions = (ArrayList<Predicate>) obj;
+                fulfillState(conditions);
             }
             else if (obj instanceof Operator) 
             {
                 Operator operator = (Operator) obj;
                 state.applyOperator(operator);
+                lastOperator = operator.clone();
                 plan.add(operator);           
             }
         }
+        
+        String s = "";
+        for (Operator action : this.plan)
+        {
+            s += action.toString() + "\n";
+        }
+        System.out.println(s);
     }
     
     private void stackOperator(Operator operator)
     {
         this.stack.push(operator);
         this.stack.push(operator.getPreconditions());
-        
-        // Stacking UsedColsNum just before the operator.
-        
-        Predicate usedColsNumPredicate = null;
-        for (Predicate condition : operator.getPreconditions())
-           {
-            if (condition instanceof UsedColsNum)
-            {
-                usedColsNumPredicate = condition;
-                break;
-            }
-        }
-        
-        if (usedColsNumPredicate != null)
-        {
-            this.stack.push(usedColsNumPredicate);
-            operator.getPreconditions().remove(usedColsNumPredicate);
-        }
-        
         for (Predicate condition : operator.getPreconditions())
         {
             this.stack.push(condition);
@@ -137,12 +138,118 @@ public class BlockWorld
         return candidates;
     }
     
+    private void heuristicConditionsRearrange(ArrayList<Predicate> preconditions)
+    {
+        ArrayList<Predicate> onTableConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> onConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> freeConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> freeArmConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> pickedUpConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> usedColsNumConditions = new ArrayList<Predicate>();
+        ArrayList<Predicate> heavierConditions = new ArrayList<Predicate>();
+        
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof OnTable)
+                onTableConditions.add(predicate);
+        }
+        
+        //
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof On)
+            {
+                On on = (On) predicate;
+                if (onConditions.size() < 1)
+                    onConditions.add(on);
+                else
+                {
+                    boolean inserted = false;
+                    for (int i = 0; i < onConditions.size() && !inserted; i++)
+                    {
+                        On on_i = (On) onConditions.get(i);
+                        if (on.dependsOn(on_i))
+                        {
+                            if (on.goesFirst(on_i))
+                                onConditions.add(i+1, on); // Going first is being late in the list (stack effect).
+                            else 
+                                onConditions.add(i, on);
+                            
+                            inserted = true;
+                        }
+                    }
+                    
+                    if (!inserted) onConditions.add(on);
+                }
+            }
+        }
+       
+        
+        //
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof Free)
+            {
+                freeConditions.add(predicate);
+            }
+        }
+        
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof FreeArm)
+            {
+                freeArmConditions.add(predicate);
+            }
+        }
+        
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof PickedUp)
+            {
+                pickedUpConditions.add(predicate);
+            }
+        }
+        
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof UsedColsNum)
+                usedColsNumConditions.add(predicate);
+        }
+        
+        for (Predicate predicate : preconditions)
+        {
+            if (predicate instanceof Heavier)
+                heavierConditions.add(predicate);
+        }
+        
+//        ArrayList<Predicate> hSortedConditions = new ArrayList<Predicate>();
+        preconditions.clear();
+        preconditions.addAll(usedColsNumConditions);
+        preconditions.addAll(freeArmConditions);
+
+        preconditions.addAll(pickedUpConditions);
+        preconditions.addAll(freeConditions);
+        preconditions.addAll(onConditions);
+        preconditions.addAll(onTableConditions);
+        
+        preconditions.addAll(heavierConditions);
+    }
+    
     private Operator heuristicOperatorChoice(ArrayList<Operator> candidates, Predicate predicate)
     {
         Operator operator = null;
         
         if (candidates.size() > 1)
         {
+//            if (lastOperator instanceof Leave)
+//            {
+//                for (Operator o : candidates)
+//                {
+//                    if (o instanceof PickUp)
+//                        candidates.remove(o);
+//                }
+//            }
+            
             if (predicate instanceof PickedUp)
             {
                 operator = pickedUpHeuristic(candidates, predicate);
@@ -211,6 +318,26 @@ public class BlockWorld
     
     public void instanciateStackedElements(Predicate predicate)
     {
+        if (predicate instanceof UsedColsNum)
+        {
+            UsedColsNum usedColsNum = (UsedColsNum) predicate;
+            for (int i = this.stack.size() - 1; i >= 0; i--)
+            {
+                Object obj = this.stack.get(i);
+                if (obj instanceof Operator)
+                {
+                    Operator op = (Operator) obj;
+                    
+                    if (op instanceof Leave)
+                        ((Leave) op).instanciateUsedColsNum(usedColsNum);
+                    else if (op instanceof PickUp)
+                        ((PickUp) op).instanciateUsedColsNum(usedColsNum);
+
+                    return;
+                }
+            }
+        }
+        
         for (int i = this.stack.size() - 1; i >= 0; i--)
         {
             Object obj = this.stack.get(i);
@@ -224,6 +351,35 @@ public class BlockWorld
             }
         }
 
+    }
+    
+    public void fulfillState(ArrayList<Predicate> conditions)
+    {
+        ArrayList<Predicate> nonFulfilledList = new ArrayList<Predicate>();
+        
+        for (Predicate condition : conditions)
+        {
+            boolean conditionFulfilled = false;
+            for (Predicate predicate : this.state.getPredicates())
+            {
+                if (condition.equals(predicate))
+                {
+                    conditionFulfilled = true;
+                    break;
+                }
+            }
+            if (!conditionFulfilled && !(condition instanceof UsedColsNum))
+                nonFulfilledList.add(condition);
+        }
+        
+        if (!nonFulfilledList.isEmpty())
+        {
+            this.stack.push(conditions);
+            for (Predicate condition : nonFulfilledList)
+            {
+                stack.push(condition);
+            }        
+        }
     }
     
     public void showStack()
@@ -261,6 +417,21 @@ public class BlockWorld
         }
         stackStr += "+--------------------------------------+\n";
         System.out.println(stackStr);
+    }
+    
+    private UsedColsNum getUsedColsNumPredicate()
+    {
+        UsedColsNum usedColsNumPredicate = null;
+        for (Predicate p : state.getPredicates())
+        {
+            if (p instanceof UsedColsNum)
+            {
+                usedColsNumPredicate = (UsedColsNum) p;
+                break;
+            }
+        }
+        
+        return usedColsNumPredicate;
     }
 }
 

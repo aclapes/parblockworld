@@ -137,7 +137,7 @@ public class State {
         return true;
     }
     
-        public void applyOperator(Operator operator)
+    public void applyOperator(Operator operator)
     {      
         for (Predicate p : operator.getRemovings())
         {
@@ -148,5 +148,7 @@ public class State {
         {
             this.addPredicate(p);
         }
+        
+        
     }
 }

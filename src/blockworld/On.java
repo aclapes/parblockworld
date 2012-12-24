@@ -76,4 +76,22 @@ public class On extends Predicate
     {
         return new On((Block) getC1().clone(), (Block) getC2().clone());
     }
+    
+    public boolean dependsOn(On other)
+    {
+        if (this.getC1().equals(other.getC2()))
+            return true;
+        if (this.getC2().equals(other.getC1()))
+            return true;
+            
+        return false;    
+    }
+    
+    public boolean goesFirst(On other)
+    {
+        if (this.getC1().equals(other.getC2()))
+            return true;
+            
+        return false;
+    }
 }

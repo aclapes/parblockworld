@@ -15,9 +15,9 @@ public class PickUp extends Operator
     BlockWorld blockWorld;
     
     private UsedColsNum preUsedColsNum;
-    private OnTable preOnTable;
     private FreeArm preFreeArm;
     private Free preFree;
+    private OnTable preOnTable;
     
     private OnTable remOnTable;
     private FreeArm remFreeArm;
@@ -32,17 +32,17 @@ public class PickUp extends Operator
     {
         super(null);
                 
-        preUsedColsNum = new UsedColsNum();
+        preUsedColsNum = new UsedColsNum(0);
         preOnTable = new OnTable(null);
         preFreeArm = new FreeArm();
         preFree = new Free(null);
         
         remOnTable = new OnTable(null);
         remFreeArm = new FreeArm();
-        remUsedColsNum = new UsedColsNum();
+        remUsedColsNum = new UsedColsNum(0);
         
         addPickedUp = new PickedUp(null);
-        addUsedColsNum = new UsedColsNum();
+        addUsedColsNum = new UsedColsNum(-1);
         
         init();
     }    
@@ -51,17 +51,17 @@ public class PickUp extends Operator
     {
         super(x);
         
-        preUsedColsNum = new UsedColsNum();
+        preUsedColsNum = new UsedColsNum(0);
         preOnTable = new OnTable(x);
         preFreeArm = new FreeArm();
         preFree = new Free(x);
         
         remOnTable = new OnTable(x);
         remFreeArm = new FreeArm();
-        remUsedColsNum = new UsedColsNum();
+        remUsedColsNum = new UsedColsNum(0);
         
         addPickedUp = new PickedUp(x);
-        addUsedColsNum = new UsedColsNum();
+        addUsedColsNum = new UsedColsNum(-1);
 
         init();
     }
@@ -69,9 +69,9 @@ public class PickUp extends Operator
     private void init()
     {
         addPrecondition(preUsedColsNum);
-        addPrecondition(preOnTable);
         addPrecondition(preFreeArm);
         addPrecondition(preFree);
+        addPrecondition(preOnTable);
         
         addRemoving(remOnTable);
         addRemoving(remFreeArm);
@@ -130,13 +130,11 @@ public class PickUp extends Operator
             instanciate(predicate);
     }
     
-    public void instanciateUsedColsNum(int n)
+    public void instanciateUsedColsNum(UsedColsNum usedColsNum)
     {
-        preUsedColsNum.setN(n);
-        
-        remUsedColsNum.setN(n);
-        
-        addUsedColsNum.setN(n-1);
+        preUsedColsNum.setN(usedColsNum.getN());
+        remUsedColsNum.setN(usedColsNum.getN());
+        addUsedColsNum.setN(usedColsNum.getN()-1);
     }
     
 }

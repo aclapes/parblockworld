@@ -59,14 +59,21 @@ public class UsedColsNum extends Predicate
     @Override
     public boolean isInstanciated() 
     {
-        return true;
+        return n > 0;
     }
 
-//    @Override
-//    public void instanciate(Constant c1, Constant c2) {
-//        this.n = this.blockWorld.getN();
-//        
-//    }
+    @Override
+    public void instanciate(State state) 
+    {
+        for (Predicate p : state.getPredicates())
+        {
+            if (p instanceof UsedColsNum)
+            {
+                this.n += ((UsedColsNum) p).getN();
+                break;
+            }
+        }
+    }
 //
 //    @Override
 //    public void partiallyInstanciate(Constant c) {
