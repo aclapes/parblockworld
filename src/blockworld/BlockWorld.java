@@ -377,21 +377,21 @@ public class BlockWorld
     {
         if ( candidates.get(0) instanceof PickUp && candidates.get(1) instanceof Unstack )
         {
-            Block x = (Block) predicate.getC1();
-            OnTable onTablePredicate = new OnTable(x);
-            if (state.fullfills(onTablePredicate)) 
+//            Block x = (Block) predicate.getC1();
+//            OnTable onTablePredicate = new OnTable(x);
+//            if (state.fullfills(onTablePredicate)) 
                 return candidates.get(0);
-            else 
-                return candidates.get(1);
+//            else 
+//                return candidates.get(1);
         }
         else if ( candidates.get(0) instanceof Unstack && candidates.get(1) instanceof PickUp )
         {
-            Block x = (Block) predicate.getC1();
-            OnTable onTablePredicate = new OnTable(x);
-            if (state.fullfills(onTablePredicate)) 
+//            Block x = (Block) predicate.getC1();
+//            OnTable onTablePredicate = new OnTable(x);
+//            if (state.fullfills(onTablePredicate)) 
                 return candidates.get(1);
-            else 
-                return candidates.get(0);
+//            else 
+//                return candidates.get(0);
         }
         
         return candidates.get(0);
@@ -409,15 +409,45 @@ public class BlockWorld
             }
         }
         
+        Block block = null;
+        for (Predicate p : state.getPredicates())
+        {
+            if (p instanceof PickedUp)
+            {
+                block = (Block) p.getC1();
+                break;
+            }
+        }
+        
+        boolean freeLighter = false;
+        ArrayList<Predicate> lighters = new ArrayList<Predicate>();
+        for (Predicate p : state.getPredicates())
+        {
+            if (p instanceof Heavier && p.equals(((Heavier) p).getC2()) )
+            {
+                for (Predicate pj : state.getPredicates())
+                {
+                    if (pj instanceof Free)
+                    {
+                        freeLighter = true;
+                        break;
+                    }
+                }
+            }
+                
+            if (freeLighter) break;
+        }
+        
+        
         if ( candidates.get(0) instanceof Leave && candidates.get(1) instanceof Stack )
         {
-            if (usedColsNum < 3) return candidates.get(0);
+            if (!freeLighter && usedColsNum < 3) return candidates.get(0);
             else 
                 return candidates.get(1);
         }
         else if ( candidates.get(0) instanceof Stack && candidates.get(1) instanceof Leave )
         {
-            if (usedColsNum < 3) return candidates.get(1);
+            if (!freeLighter && usedColsNum < 3) return candidates.get(1);
             else return candidates.get(0);
         }
         

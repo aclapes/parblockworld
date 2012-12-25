@@ -169,7 +169,7 @@ public class Main {
         
         ArrayList<Predicate> sortedOnTables = sortOnTables(ontables, priorities);
         
-        BlockWorldParser parser = new BlockWorldParser("init2.txt");
+        BlockWorldParser parser = new BlockWorldParser("init4.txt");
         BlockWorld blockWorld = new BlockWorld(parser.parse());
         blockWorld.exec();
         
