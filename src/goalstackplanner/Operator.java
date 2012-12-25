@@ -62,12 +62,16 @@ public abstract class Operator
 
     public void setC1(Constant c1) 
     {
-        if (c1 != null) this.c1 = c1.clone();
+        if (c1 != null) 
+        {
+            this.c1 = c1;//.clone();
+            
+        }
     }
 
     public void setC2(Constant c2) 
     {
-        if (c2 != null) this.c2 = c2.clone();
+        if (c2 != null) this.c2 = c2;//.clone();
     }
     
     public boolean equals(Operator other)

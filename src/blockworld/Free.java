@@ -66,6 +66,6 @@ public class Free extends Predicate
     @Override
     public Free clone()
     {
-        return new Free((Block) getC1().clone());
+        return new Free((Block) getC1());//.clone());
     }    
 }

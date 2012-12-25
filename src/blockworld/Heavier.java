@@ -81,6 +81,11 @@ public class Heavier extends Predicate
     @Override
     public Heavier clone()
     {
-        return new Heavier((Block) getC1().clone(), (Block) getC2().clone());
+        return new Heavier((Block) getC1(), (Block) getC2());
+    }
+    
+    public void instanciate(Block x)
+    {
+        if (this.getC1() == null) this.setC1(x);
     }
 }

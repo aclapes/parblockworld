@@ -70,6 +70,6 @@ public class PickedUp extends Predicate
     @Override
     public PickedUp clone()
     {
-        return new PickedUp((Block) getC1().clone());
+        return new PickedUp((Block) getC1());
     }
 }

@@ -24,6 +24,10 @@ public abstract class Constant {
     {
         return this.name;
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
     
     @Override
     public boolean equals(Object ob) {
@@ -37,4 +41,10 @@ public abstract class Constant {
     
     @Override
     public abstract Constant clone();
+    
+    @Override
+    public String toString()
+    {
+        return name;
+    }
 }

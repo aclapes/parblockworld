@@ -4,11 +4,13 @@
  */
 package blockworld;
 
+import goalstackplanner.Constant;
 import goalstackplanner.Operator;
 import goalstackplanner.Predicate;
 import goalstackplanner.Problem;
 import goalstackplanner.State;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -58,18 +60,31 @@ public class BlockWorld
     
     public void exec()
     {
+        int iter = 0;
+        
         while(!stack.empty())
         {   
-            showStack();
+            showStack(iter++);
             
-            ArrayList<Predicate> predicates = this.state.getPredicates(); // DEBUG
+            heuristicConditionsRearrange(this.state.getPredicates());// DEBUG
+            ArrayList<Predicate> predicates = this.state.getPredicates();
+                    
             Object obj = stack.pop();
             
             if (obj instanceof Predicate && !((Predicate) obj).isInstanciated()) 
             {
                 Predicate predicate = (Predicate) obj;
-                predicate.instanciate(state);
-                instanciateStackedElements(predicate);
+                if (predicate instanceof UsedColsNum)
+                {
+                    ((UsedColsNum) predicate).instanciate(state);
+                    instanciateStackedElements(predicate);
+                }
+                else
+                {
+                    ArrayList<Block> blockCandidates = (ArrayList<Block>) predicate.getInstanciationCandidates(state);
+                    heuristicPredicateInstanciation(predicate, blockCandidates);
+                    instanciateStackedElements(predicate);
+                }
                 stack.push(predicate);
             }
             else if (obj instanceof Predicate && ((Predicate) obj).isInstanciated())
@@ -103,6 +118,10 @@ public class BlockWorld
             {
                 Operator operator = (Operator) obj;
                 state.applyOperator(operator);
+                
+                if (operator instanceof Stack) // Heuristics
+                    ((Block)operator.getC1()).stackOn((Block) operator.getC2());
+                
                 lastOperator = operator.clone();
                 plan.add(operator);           
             }
@@ -222,6 +241,9 @@ public class BlockWorld
                 heavierConditions.add(predicate);
         }
         
+        ArrayList<Integer> priorities = getOnTablePriorities(onTableConditions, preconditions);
+        ArrayList<Predicate> sortedOnTableConditions = sortOnTables(onTableConditions, priorities); // TODO: petada quan no hi ha "On" predicates.  
+        
 //        ArrayList<Predicate> hSortedConditions = new ArrayList<Predicate>();
         preconditions.clear();
         preconditions.addAll(usedColsNumConditions);
@@ -229,10 +251,101 @@ public class BlockWorld
 
         preconditions.addAll(pickedUpConditions);
         preconditions.addAll(freeConditions);
+        preconditions.addAll(sortedOnTableConditions);
         preconditions.addAll(onConditions);
-        preconditions.addAll(onTableConditions);
+   
+        
         
         preconditions.addAll(heavierConditions);
+    }
+    
+    private Block putOnHeaviestNotRepeating(Predicate predicate, ArrayList<Block> candidateBlocks)
+    {
+        Block bestCandidate = candidateBlocks.get(0);
+        int maxCounts = 0;
+        for (Block b : candidateBlocks)
+        {
+            if (b.equals( ((Block) predicate.getC2()).lastStackOn() ) )
+                continue;
+
+            int counts = 0;
+            for (Predicate p : this.state.getPredicates() )
+            {
+                if (p instanceof Heavier && b.equals(p.getC1()))
+                    counts++;
+            }
+            if (counts > maxCounts)
+            {
+                bestCandidate = b;
+                maxCounts = counts;
+            }       
+        }
+        return bestCandidate;
+    }
+    
+    private Block putOnLightestNotRepeating(Predicate predicate, ArrayList<Block> candidateBlocks)
+    {
+        Block bestCandidate = null;
+        int minCounts = 10000;
+        for (Block b : candidateBlocks)
+        {
+            if (b.equals( ((Block) predicate.getC2()).lastStackOn() ) )
+                continue;
+
+            int counts = 0;
+            for (Predicate p : this.state.getPredicates() )
+            {
+                if (p instanceof Heavier && b.equals(p.getC1()))
+                    counts++;
+            }
+            if (counts < minCounts)
+            {
+                bestCandidate = b;
+                minCounts = counts;
+            }       
+        }
+        
+        if (bestCandidate == null)
+            return candidateBlocks.get((int) (Math.random() * candidateBlocks.size()));
+        else
+            return bestCandidate;
+    }
+    
+    private Block putOnRandomlyNotRepeating(Predicate predicate, ArrayList<Block> candidateBlocks)
+    {
+        ArrayList<Block> notRepeatedCandidates = new ArrayList<Block>();
+        for (Block b : candidateBlocks)
+        {
+            if (b.equals( ((Block) predicate.getC2()).lastStackOn() ) )
+                continue;
+            
+            notRepeatedCandidates.add(b);
+        }
+        int idx = (int) (Math.random() * notRepeatedCandidates.size()); 
+        
+        return notRepeatedCandidates.get(idx);
+    }
+          
+    private void heuristicPredicateInstanciation(Predicate predicate, ArrayList<Block> candidateBlocks)
+    {
+        
+        if (predicate instanceof Heavier)
+        {
+
+            //Block b = putOnHeaviestNotRepeating(predicate, candidateBlocks);
+            //Block b = putOnRandomlyNotRepeating(predicate, candidateBlocks);   
+            Block b = putOnLightestNotRepeating(predicate, candidateBlocks); 
+            predicate.setC1(b);
+        }
+        else if (predicate instanceof On)
+        {
+            if (predicate.getC1() == null)
+                predicate.setC1(candidateBlocks.get(0));
+            else
+                predicate.setC2(candidateBlocks.get(0));
+        }
+        else
+            predicate.setC1(candidateBlocks.get(0));
     }
     
     private Operator heuristicOperatorChoice(ArrayList<Operator> candidates, Predicate predicate)
@@ -241,22 +354,16 @@ public class BlockWorld
         
         if (candidates.size() > 1)
         {
-//            if (lastOperator instanceof Leave)
-//            {
-//                for (Operator o : candidates)
-//                {
-//                    if (o instanceof PickUp)
-//                        candidates.remove(o);
-//                }
-//            }
-            
             if (predicate instanceof PickedUp)
             {
                 operator = pickedUpHeuristic(candidates, predicate);
             }
             else if (predicate instanceof FreeArm)
             {
+                Predicate pickedUp = state.getPredicate(PickedUp.class);
+//                Block x = (Block) pickedUp.getC1();
                 operator = freeArmHeuristic(candidates);
+                operator.instanciate(pickedUp);
             }
         }
         // Heuristics to choice among several possibilities.
@@ -305,7 +412,8 @@ public class BlockWorld
         if ( candidates.get(0) instanceof Leave && candidates.get(1) instanceof Stack )
         {
             if (usedColsNum < 3) return candidates.get(0);
-            else return candidates.get(1);
+            else 
+                return candidates.get(1);
         }
         else if ( candidates.get(0) instanceof Stack && candidates.get(1) instanceof Leave )
         {
@@ -382,11 +490,11 @@ public class BlockWorld
         }
     }
     
-    public void showStack()
+    public void showStack(int iter)
     {
         Iterator<Object> it = stack.iterator();
         String stackStr = "+--------------------------------------+\n"
-                        + "|           STACK (" + stack.size() + ")\n"
+                        + "|           STACK (" + iter + ")\n"
                         + "+======================================+\n";
         
         String whitespaces = "        ";
@@ -419,19 +527,100 @@ public class BlockWorld
         System.out.println(stackStr);
     }
     
-    private UsedColsNum getUsedColsNumPredicate()
+//    private UsedColsNum getUsedColsNumPredicate()
+//    {
+//        UsedColsNum usedColsNumPredicate = null;
+//        for (Predicate p : state.getPredicates())
+//        {
+//            if (p instanceof UsedColsNum)
+//            {
+//                usedColsNumPredicate = (UsedColsNum) p;
+//                break;
+//            }
+//        }
+//        
+//        return usedColsNumPredicate;
+//    }
+
+    public ArrayList<Predicate> buildTower(On base, ArrayList<Predicate> preconditions)
     {
-        UsedColsNum usedColsNumPredicate = null;
-        for (Predicate p : state.getPredicates())
-        {
-            if (p instanceof UsedColsNum)
+        ArrayList<Predicate> tower = new ArrayList<Predicate>();
+        tower.add(base);
+    
+        boolean growing = true;
+        
+        do {
+            growing = false;
+            for (Predicate p : preconditions)
             {
-                usedColsNumPredicate = (UsedColsNum) p;
-                break;
+                if (p instanceof On)
+                {
+                    On on = (On) p;
+                    if ( tower.get(tower.size()-1).getC1().equals(on.getC2()) )
+                    {
+                        tower.add(on);
+                        growing = true;
+                        break;
+                    }
+                }
             }
+        } while (growing);
+        
+        return tower;
+    }
+    
+    public ArrayList<Predicate> sortOnTables(ArrayList<Predicate> onTables, ArrayList<Integer> heights)
+    {
+        ArrayList<Predicate> sortedOnTables = new ArrayList<Predicate>();
+        ArrayList<Integer> sortedHeights = new ArrayList<Integer>();
+        
+        Integer i = 0;
+        for (Predicate p : onTables)
+        {
+            OnTable ont = (OnTable) p;
+            boolean inserted = false;
+            for (int j = 0; !inserted && j < sortedOnTables.size(); j++)
+            {
+                if ( !(heights.get(i) > sortedHeights.get(j)) )
+                {
+                    sortedOnTables.add(j, p);
+                    sortedHeights.add(j, heights.get(i));
+                    inserted = true;
+                }
+            }
+            
+            if (!inserted)
+            {
+                sortedOnTables.add(p);
+                sortedHeights.add(heights.get(i));
+            }
+            i++;
         }
         
-        return usedColsNumPredicate;
+        return sortedOnTables;
     }
+    
+    public ArrayList<Integer> getOnTablePriorities(ArrayList<Predicate> onTables, ArrayList<Predicate> preconditions)
+    {
+        ArrayList<Integer> counts = new ArrayList<Integer>();
+        for (Predicate pi : onTables)
+        {
+            ArrayList<Predicate> tower = null;
+            
+            for (Predicate pj : preconditions)
+            {
+                if (pj instanceof On && pi.getC1().equals(pj.getC2()) )
+                        tower = buildTower((On)pj, preconditions);
+            }
+            
+            if (tower != null) 
+                counts.add(tower.size());
+            else
+                counts.add(0);
+        }
+        
+        return counts;
+    }
+
 }
 

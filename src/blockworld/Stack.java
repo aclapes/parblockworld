@@ -145,14 +145,28 @@ public class Stack extends Operator
         }
         else if (getC2() == null)
         {
-            setC2(y);
+            if (predicate instanceof Heavier)
+            {
+                this.setC2(x);
 
-            preFree.setC1(y);
-            preHeavier.setC1(y);
-            
-            remFree.setC1(y);
-            
-            addOn.setC2(y);
+                preFree.setC1(x);
+                preHeavier.setC1(x);
+
+                remFree.setC1(x);
+
+                addOn.setC2(x);
+            }
+            else
+            {
+                setC2(y);
+
+                preFree.setC1(y);
+                preHeavier.setC1(y);
+
+                remFree.setC1(y);
+
+                addOn.setC2(y);
+            }
         }
     }
 }

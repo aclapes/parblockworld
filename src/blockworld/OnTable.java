@@ -71,6 +71,6 @@ public class OnTable extends Predicate
     @Override
     public OnTable clone()
     {
-        return new OnTable((Block) getC1().clone());
+        return new OnTable((Block) getC1());
     }
 }

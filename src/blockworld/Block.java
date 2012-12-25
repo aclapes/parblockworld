@@ -13,6 +13,7 @@ import goalstackplanner.Constant;
 public class Block extends Constant 
 {
     
+    private Block lastStackOver;
     // Constructors
     
     public Block(String name)
@@ -22,7 +23,24 @@ public class Block extends Constant
 
     @Override
     public Block clone() {
-        return new Block(getName());
+        Block clone = new Block(getName());
+        clone.stackOn(this.lastStackOn());
+        return clone;
     }
     
+    @Override
+    public String toString()
+    {
+        return super.toString();
+    }
+    
+    public Block lastStackOn()
+    {
+        return this.lastStackOver;
+    }
+    
+    public void stackOn(Block block)
+    {
+        this.lastStackOver = block;
+    }
 }

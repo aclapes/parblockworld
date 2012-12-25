@@ -74,7 +74,7 @@ public class On extends Predicate
     @Override
     public On clone()
     {
-        return new On((Block) getC1().clone(), (Block) getC2().clone());
+        return new On((Block) getC1(), (Block) getC2());
     }
     
     public boolean dependsOn(On other)
@@ -93,5 +93,10 @@ public class On extends Predicate
             return true;
             
         return false;
+    }
+    
+    public void instanciate(Constant c)
+    {
+        if (this.getC2() == null) this.setC2(c);
     }
 }

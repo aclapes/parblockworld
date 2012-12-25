@@ -27,16 +27,16 @@ public abstract class Predicate {
     
     public Predicate(Constant c)
     {
-        if (c != null) this.c1 = c.clone();
+        if (c != null) this.c1 = c;//.clone();
         else this.c1 = null;
         this.c2 = null;
     }    
     
     public Predicate(Constant c1, Constant c2)
     {
-        if (c1 != null) this.c1 = c1.clone();
+        if (c1 != null) this.c1 = c1;//.clone();
         else this.c1 = null;
-        if (c2 != null) this.c2 = c2.clone();
+        if (c2 != null) this.c2 = c2;//.clone();
         else this.c2 = null;
     }
     
@@ -90,47 +90,71 @@ public abstract class Predicate {
 //    public abstract void partiallyInstanciate(Constant c);
     
     public void setC1(Constant c) {
-        if (c != null) this.c1 = c.clone();
+        if (c != null) this.c1 = c;//.clone();
     }
 
     public void setC2(Constant c) {
-        if (c != null) this.c2 = c.clone();
+        if (c != null) this.c2 = c;//.clone();
     }
     
     public abstract Predicate clone();
     
-    public void instanciate(State state)
+    public ArrayList<? extends Constant> getInstanciationCandidates(State state)
     {
-        for (int i = state.getPredicates().size() - 1; i >= 0; i--)
+        ArrayList<Constant> candidates = new ArrayList<Constant>();
+        
+        if (this.getC1() != null && this.getC2() != null) // fully instaniated!
+            return candidates;  // Void list. Problem? Hope not.
+
+        for (Predicate p : state.getPredicates())
         {
-            Predicate p = state.getPredicates().get(i);
-            if (p.getClass() == this.getClass())
+            if (this.getClass() == p.getClass())
             {
-                // Operator(null) <- Operator(Predicate) , TODO several possibilities!!!
-                if (this.getC1() == null && this.getC2() == null)
+                if (this.getC1() == null)
                 {
-                    this.setC1(p.getC1());
-                    return;
+                    if (this.getC2().equals(p.getC2()))
+                        candidates.add(p.getC1());
                 }
-                else if (this.getC1() == null && this.getC2() != null)
+                else
                 {
-                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
-                    if ( p.getC2().equals(this.getC2()) )
-                    {
-                        this.setC1(p.getC1());
-                        return;
-                    }
-                }
-                else if (this.getC1() != null && this.getC2() == null)
-                {
-                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
-                    if ( p.getC1().equals(this.getC1()) )
-                    {
-                        this.setC2(p.getC2());
-                        return;
-                    }
+                    if (this.getC1().equals(p.getC1()))
+                        candidates.add(p.getC2());
                 }
             }
-        } 
+        }
+        
+        return candidates;
+        
+//        for (int i = state.getPredicates().size() - 1; i >= 0; i--)
+//        {
+//            Predicate p = state.getPredicates().get(i);
+//            if (p.getClass() == this.getClass())
+//            {
+//                // Operator(null) <- Operator(Predicate) , TODO several possibilities!!!
+//                if (this.getC1() == null && this.getC2() == null)
+//                {
+//                    this.setC1(p.getC1());
+//                    return;
+//                }
+//                else if (this.getC1() == null && this.getC2() != null)
+//                {
+//                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
+//                    if ( p.getC2().equals(this.getC2()) )
+//                    {
+//                        this.setC1(p.getC1());
+//                        return;
+//                    }
+//                }
+//                else if (this.getC1() != null && this.getC2() == null)
+//                {
+//                    // Operator(Predicate, null) <- Operator(Predicate, Predicate)
+//                    if ( p.getC1().equals(this.getC1()) )
+//                    {
+//                        this.setC2(p.getC2());
+//                        return;
+//                    }
+//                }
+//            }
+//        } 
     }
 }

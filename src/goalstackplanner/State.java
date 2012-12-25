@@ -148,7 +148,19 @@ public class State {
         {
             this.addPredicate(p);
         }
-        
-        
     }
+    
+    public Predicate getPredicate(Class classType)
+    {
+        for (Predicate p : this.predicates)
+        {
+            if (p.getClass() == classType)
+            {
+                return p;
+            }
+        }
+        
+        return null;
+    }
+    
 }

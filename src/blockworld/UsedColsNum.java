@@ -61,8 +61,7 @@ public class UsedColsNum extends Predicate
     {
         return n > 0;
     }
-
-    @Override
+    
     public void instanciate(State state) 
     {
         for (Predicate p : state.getPredicates())
