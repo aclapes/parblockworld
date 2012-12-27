@@ -26,6 +26,7 @@ public class BlockWorld
     
     // Unstable variables (change throughout time)
     private ArrayList<Operator> plan;
+    private ArrayList<Integer> cols;
     private java.util.Stack stack;
     private State state;
     private Operator lastOperator;
@@ -56,6 +57,7 @@ public class BlockWorld
         
         // Prepare actions list
         plan = new ArrayList<Operator>();
+        cols = new ArrayList<Integer>();
     }
     
     public void exec()
@@ -123,14 +125,16 @@ public class BlockWorld
                     ((Block)operator.getC1()).stackOn((Block) operator.getC2());
                 
                 lastOperator = operator.clone();
-                plan.add(operator);           
+                plan.add(operator);
+                cols.add(getCurrenlyUsedColsNum());
             }
         }
         
         String s = "";
+        int i = 0;
         for (Operator action : this.plan)
         {
-            s += action.toString() + "\n";
+            s += action.toString() + " " + cols.get(i++) + "\n";
         }
         System.out.println(s);
     }
@@ -143,6 +147,19 @@ public class BlockWorld
         {
             this.stack.push(condition);
         }
+    }
+    
+    private int getCurrenlyUsedColsNum()
+    {
+        for (Predicate p : state.getPredicates())
+        {
+            if (p instanceof UsedColsNum)
+            {
+                return ((UsedColsNum) p).getN();
+            }
+        }
+        
+        return 0;
     }
     
     private ArrayList<Operator> findOperatorToFullfilPredicate(Predicate p)
